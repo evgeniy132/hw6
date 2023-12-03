@@ -10,60 +10,75 @@ type Transport interface {
 
 type PassengerTransport interface {
 	Transport
-	BoardPassengers()
-	DisembarkPassengers()
+	BoardPassengers(int)
+	DisembarkPassengers(int)
 }
 
 type Vehicle struct {
 	Name string
 }
 
-type Car struct {
+func (v Vehicle) Move() {
+	fmt.Printf(" %s is moving", v.Name)
+}
+
+func (v Vehicle) Stop() {
+	fmt.Printf("%s stopped", v.Name)
+}
+
+func (v Vehicle) ChangeSpeed(speed int) {
+	fmt.Printf(" %s speed changed to %d\n", v.Name, speed)
+}
+
+type PassengersVehicle struct {
+	PassengerCount int
 	Vehicle
 }
 
-func (c Car) Move() {
-	fmt.Println("Car is moving")
+func (p *PassengersVehicle) BoardPassengers(boardPassengersCount int) {
+	p.PassengerCount = p.PassengerCount + boardPassengersCount
+	fmt.Printf("Passengers %d boarded the %s, now in %s %d passangers", boardPassengersCount, p.Name, p.Name, p.PassengerCount)
 }
 
-func (c Car) Stop() {
-	fmt.Println("Car stopped")
+func (p *PassengersVehicle) DisembarkPassengers(disembarkPassengers int) {
+	if disembarkPassengers > p.PassengerCount {
+		diff := disembarkPassengers - p.PassengerCount
+		fmt.Printf("Not enought passangers, in %s is %d passangers less than we want\n ", p.Name, diff)
+		disembarkPassengers = p.PassengerCount
+
+	}
+	p.PassengerCount = p.PassengerCount - disembarkPassengers
+	fmt.Printf("Passengers %d disembarked from the %s, now in %s %d passangers\n", disembarkPassengers, p.Name, p.Name, p.PassengerCount)
 }
 
-func (c Car) ChangeSpeed(speed int) {
-	fmt.Printf("Car speed changed to %d\n", speed)
+type Car struct {
+	*PassengersVehicle
 }
 
-func (c Car) BoardPassengers() {
-	fmt.Println("Passengers boarded the car")
-}
+const maxPasInCar = 5
 
-func (c Car) DisembarkPassengers() {
-	fmt.Println("Passengers disembarked from the car")
+func (c Car) BoardPassengers(Bp int) {
+
+	if Bp+c.PassengerCount > maxPasInCar {
+		Bp = maxPasInTrain - c.PassengerCount
+		fmt.Printf("yoy too many passangers, on board goes only %d passangers", Bp)
+	}
+	c.PassengersVehicle.BoardPassengers(Bp)
 }
 
 type Train struct {
-	Vehicle
+	*PassengersVehicle
 }
 
-func (t Train) Move() {
-	fmt.Println("Train is moving")
-}
+const maxPasInTrain = 25
 
-func (t Train) Stop() {
-	fmt.Println("Train stopped")
-}
+func (t Train) BoardPassengers(Bp int) {
 
-func (t Train) ChangeSpeed(speed int) {
-	fmt.Printf("Train speed changed to %d\n", speed)
-}
-
-func (t Train) BoardPassengers() {
-	fmt.Println("Passengers boarded the train")
-}
-
-func (t Train) DisembarkPassengers() {
-	fmt.Println("Passengers disembarked from the train")
+	if Bp+t.PassengerCount > maxPasInTrain {
+		Bp = maxPasInTrain - t.PassengerCount
+		fmt.Printf("yoy too many passangers, on board goes only %d passangers", Bp)
+	}
+	t.PassengersVehicle.BoardPassengers(Bp)
 }
 
 type Plane struct {
@@ -107,9 +122,14 @@ func (r Route) ShowTransports() {
 
 func main() {
 	var route Route
-
-	car := Car{Vehicle{Name: "Car"}}
-	train := Train{Vehicle{Name: "Train"}}
+	car := Car{}
+	car.PassengersVehicle = &PassengersVehicle{
+		Vehicle: Vehicle{Name: "Car"},
+	}
+	train := Train{}
+	train.PassengersVehicle = &PassengersVehicle{
+		Vehicle: Vehicle{Name: "Train"},
+	}
 	plane := Plane{Vehicle{Name: "Plane"}}
 
 	route.AddTransport(car)
@@ -121,12 +141,17 @@ func main() {
 	for _, transport := range route.Transports {
 		fmt.Printf("Traveling with %T:\n", transport)
 		transport.Move()
-
+		transport.ChangeSpeed(100)
 		if pt, ok := transport.(PassengerTransport); ok {
-			pt.BoardPassengers()
-			pt.ChangeSpeed(500)
+			fmt.Println("enter passanges count:")
+			var pcount int
+			fmt.Scan(&pcount)
+			pt.BoardPassengers(pcount)
 			pt.Stop()
-			pt.DisembarkPassengers()
+			fmt.Println("enter go out passanges count :")
+			var outcount int
+			fmt.Scan(&outcount)
+			pt.DisembarkPassengers(outcount)
 		}
 
 		fmt.Println()
